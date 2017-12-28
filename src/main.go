@@ -29,8 +29,6 @@ type Message struct {
 // type Messages []Message
 
 func main() {
-	fs := http.FileServer(http.Dir("../public"))
-	http.Handle("/", fs)
 	// Configure websocket route
 	http.HandleFunc("/ws", handleConnections)
 
