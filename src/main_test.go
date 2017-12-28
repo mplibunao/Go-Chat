@@ -10,75 +10,60 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// var testClients = make(map[*websocket.Conn]bool)
-// var testBroadcast = make(chan Message)
-
-var upgrade = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-// func testHandleConnections(w http.ResponseWriter, r *http.Request) {
-// 	// Upgrade initial GET request to a websocket
-// 	ws, err := upgrader.Upgrade(w, r, nil)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-
-// 	// Make sure we close the connection when the function returns
-// 	defer ws.Close()
-
-// 	// Register our new client
-// 	testClients[ws] = true
-
-// 	for {
-// 		var msg Message
-// 		// Read in a new message as JSON and map it to a Message object
-// 		err := ws.ReadJSON(&msg)
-// 		if err != nil {
-// 			log.Printf("error: %v", err)
-// 			delete(testClients, ws)
-// 			break
-// 		}
-// 		// Send the newly received message to the broadcast channel
-// 		testBroadcast <- msg
-// 	}
-// }
+var message string
 
 func TestExample(t *testing.T) {
 	// Create server with the handleConnections handler
 	s := httptest.NewServer(http.HandlerFunc(handleConnections))
+	go handleMessages()
 	defer s.Close()
 
 	// Convert http://127.0.0.1 to ws://127.0.0.1
 	u := "ws" + strings.TrimPrefix(s.URL+"/ws", "http")
-	t.Log("url is:", u)
 
 	// Connect to the server
-	ws, _, err := websocket.DefaultDialer.Dial(u, nil)
+	c, _, err := websocket.DefaultDialer.Dial(u, nil)
 	if err != nil {
-		t.Fatalf("%v", err)
+		t.Fatalf("cannot establish websocket connection: %v", err)
 	}
-	defer ws.Close()
+	defer c.Close()
 
 	for i := 0; i < 10; i++ {
-
-		strMsg := `{"email": "mark@gmail.com", "username": "mplibunao", "message": "Test Message" }`
+		strMsg := `{ "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
 		textBytes := []byte(strMsg)
-		msg := Message{}
-		err := json.Unmarshal(textBytes, &msg)
+		sentMessage := Message{}
+		err := json.Unmarshal(textBytes, &sentMessage)
 		if err != nil {
 			t.Fatalf("error parsing json %v", err)
 		}
+		t.Log("eh")
+		c.WriteJSON(sentMessage)
 
-		ws.WriteJSON(msg)
+		// receivedMessage := Message{}
+		// ws.ReadJSON(&receivedMessage)
+		t.Log("woo")
+		_, p, err := c.ReadMessage()
+		t.Log(string(p))
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
 
-		// for client := range clients {
-		// 	err := client.WriteJSON(msg)
-
+		if string(p) != "hello" {
+			t.Fatalf("bad message ")
+		}
+		// if string(receivedMessage) != "hello" {
+		// 	t.Fatalf("bad message ")
 		// }
+
+		// receivedMessage := <-broadcast
+		// t.Log("Message received %v", receivedMessage)
 	}
+	t.Log("woy")
+
+	// Grab the next message from the broadcast channel
+	//msg := <-broadcast
+	// Send it out to every client that is currently connected
+	//t.Log("message received %v", msg)
 
 	// for i := 0; i < 10; i++ {
 	// 	if err := ws.WriteMessage(websocket.TextMessage, []byte("hello")); err != nil {
@@ -97,23 +82,3 @@ func TestExample(t *testing.T) {
 	// 	t.Log("Message received:", string(p))
 	// }
 }
-
-// func echo(w http.ResponseWriter, r *http.Request) {
-// 	ws, err := upgrader.Upgrade(w, r, nil)
-// 	if err != nil {
-// 		return
-// 	}
-
-// 	defer ws.Close()
-// 	for {
-// 		mt, message, err := ws.ReadMessage()
-// 		if err != nil {
-// 			break
-// 		}
-
-// 		err = ws.WriteMessage(mt, message)
-// 		if err != nil {
-// 			break
-// 		}
-// 	}
-// }
