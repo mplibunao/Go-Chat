@@ -70,7 +70,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		// Send the newly received message to the broadcast channel
 		broadcast <- msg
 	}
-
 }
 
 func handleMessages() {
