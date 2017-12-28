@@ -22,63 +22,40 @@ func TestExample(t *testing.T) {
 	u := "ws" + strings.TrimPrefix(s.URL+"/ws", "http")
 
 	// Connect to the server
-	c, _, err := websocket.DefaultDialer.Dial(u, nil)
+	ws, _, err := websocket.DefaultDialer.Dial(u, nil)
 	if err != nil {
 		t.Fatalf("cannot establish websocket connection: %v", err)
 	}
-	defer c.Close()
+	defer ws.Close()
 
-	for i := 0; i < 10; i++ {
-		strMsg := `{ "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
-		textBytes := []byte(strMsg)
-		sentMessage := Message{}
-		err := json.Unmarshal(textBytes, &sentMessage)
-		if err != nil {
-			t.Fatalf("error parsing json %v", err)
-		}
-		t.Log("eh")
-		c.WriteJSON(sentMessage)
-
-		// receivedMessage := Message{}
-		// ws.ReadJSON(&receivedMessage)
-		t.Log("woo")
-		_, p, err := c.ReadMessage()
-		t.Log(string(p))
-		if err != nil {
-			t.Fatalf("%v", err)
-		}
-
-		if string(p) != "hello" {
-			t.Fatalf("bad message ")
-		}
-		// if string(receivedMessage) != "hello" {
-		// 	t.Fatalf("bad message ")
-		// }
-
-		// receivedMessage := <-broadcast
-		// t.Log("Message received %v", receivedMessage)
+	// Create and Send Message
+	strMsg := `{ "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
+	textBytes := []byte(strMsg)
+	sentMessage := Message{}
+	parseErr := json.Unmarshal(textBytes, &sentMessage)
+	if parseErr != nil {
+		t.Fatalf("error parsing JSON: %v", parseErr)
 	}
-	t.Log("woy")
 
-	// Grab the next message from the broadcast channel
-	//msg := <-broadcast
-	// Send it out to every client that is currently connected
-	//t.Log("message received %v", msg)
+	writeErr := ws.WriteJSON(sentMessage)
+	if writeErr != nil {
+		t.Fatalf("error sending JSON: %v", writeErr)
+	}
 
-	// for i := 0; i < 10; i++ {
-	// 	if err := ws.WriteMessage(websocket.TextMessage, []byte("hello")); err != nil {
-	// 		t.Fatalf("%v", err)
-	// 	}
-
-	// 	_, p, err := ws.ReadMessage()
-	// 	if err != nil {
-	// 		t.Fatalf("%v", err)
-	// 	}
-
-	// 	if string(p) != "hello" {
-	// 		t.Fatalf("bad message ")
-	// 	}
-
-	// 	t.Log("Message received:", string(p))
-	// }
+	// Receive Message
+	receivedMessage := Message{}
+	readErr := ws.ReadJSON(&receivedMessage)
+	if readErr != nil {
+		t.Fatalf("error reading JSON: %v", readErr)
+	}
+	t.Log("received json:", receivedMessage)
+	if receivedMessage.Email != "mark@gmail.com" {
+		t.Fatalf("incorrect Email, got: %v, want: %v", receivedMessage.Email, "mark@gmail.com")
+	}
+	if receivedMessage.Username != "mplibunao" {
+		t.Fatalf("incorrect Username, got: %v, want: %v", receivedMessage.Username, "mplibunao")
+	}
+	if receivedMessage.Message != "Hello World" {
+		t.Fatalf("incorrect Message, got: %v, want: %v", receivedMessage.Message, "Hello World")
+	}
 }
