@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,63 +10,45 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// var testClients = make(map[*websocket.Conn]bool)
+// var testBroadcast = make(chan Message)
+
 var upgrade = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
 
-func testhandleConnections(w http.ResponseWriter, r *http.Request) {
-	// Upgrade initial GET request to a websocket
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		log.Fatal(err)
-	}
+// func testHandleConnections(w http.ResponseWriter, r *http.Request) {
+// 	// Upgrade initial GET request to a websocket
+// 	ws, err := upgrader.Upgrade(w, r, nil)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
 
-	// Make sure we close the connection when the function returns
-	defer ws.Close()
+// 	// Make sure we close the connection when the function returns
+// 	defer ws.Close()
 
-	// Register our new client
-	clients[ws] = true
+// 	// Register our new client
+// 	testClients[ws] = true
 
-	for {
-		var msg Message
-		// Read in a new message as JSON and map it to a Message object
-		err := ws.ReadJSON(&msg)
-		if err != nil {
-			log.Printf("error: %v", err)
-			delete(clients, ws)
-			break
-		}
-		// Send the newly received message to the broadcast channel
-		broadcast <- msg
-	}
-}
-
-func echo(w http.ResponseWriter, r *http.Request) {
-	ws, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		return
-	}
-
-	defer ws.Close()
-	for {
-		mt, message, err := ws.ReadMessage()
-		if err != nil {
-			break
-		}
-
-		err = ws.WriteMessage(mt, message)
-		if err != nil {
-			break
-		}
-	}
-}
+// 	for {
+// 		var msg Message
+// 		// Read in a new message as JSON and map it to a Message object
+// 		err := ws.ReadJSON(&msg)
+// 		if err != nil {
+// 			log.Printf("error: %v", err)
+// 			delete(testClients, ws)
+// 			break
+// 		}
+// 		// Send the newly received message to the broadcast channel
+// 		testBroadcast <- msg
+// 	}
+// }
 
 func TestExample(t *testing.T) {
-	t.Log("sup")
-	// Create server with the echo handler
-	s := httptest.NewServer(http.HandlerFunc(testhandleConnections))
+	// Create server with the handleConnections handler
+	s := httptest.NewServer(http.HandlerFunc(handleConnections))
 	defer s.Close()
 
 	// Convert http://127.0.0.1 to ws://127.0.0.1
@@ -81,19 +63,57 @@ func TestExample(t *testing.T) {
 	defer ws.Close()
 
 	for i := 0; i < 10; i++ {
-		if err := ws.WriteMessage(websocket.TextMessage, []byte("hello")); err != nil {
-			t.Fatalf("%v", err)
-		}
 
-		_, p, err := ws.ReadMessage()
+		strMsg := `{"email": "mark@gmail.com", "username": "mplibunao", "message": "Test Message" }`
+		textBytes := []byte(strMsg)
+		msg := Message{}
+		err := json.Unmarshal(textBytes, &msg)
 		if err != nil {
-			t.Fatalf("%v", err)
+			t.Fatalf("error parsing json %v", err)
 		}
 
-		if string(p) != "hello" {
-			t.Fatalf("bad message ")
-		}
+		ws.WriteJSON(msg)
 
-		t.Log("Message received:", string(p))
+		// for client := range clients {
+		// 	err := client.WriteJSON(msg)
+
+		// }
 	}
+
+	// for i := 0; i < 10; i++ {
+	// 	if err := ws.WriteMessage(websocket.TextMessage, []byte("hello")); err != nil {
+	// 		t.Fatalf("%v", err)
+	// 	}
+
+	// 	_, p, err := ws.ReadMessage()
+	// 	if err != nil {
+	// 		t.Fatalf("%v", err)
+	// 	}
+
+	// 	if string(p) != "hello" {
+	// 		t.Fatalf("bad message ")
+	// 	}
+
+	// 	t.Log("Message received:", string(p))
+	// }
 }
+
+// func echo(w http.ResponseWriter, r *http.Request) {
+// 	ws, err := upgrader.Upgrade(w, r, nil)
+// 	if err != nil {
+// 		return
+// 	}
+
+// 	defer ws.Close()
+// 	for {
+// 		mt, message, err := ws.ReadMessage()
+// 		if err != nil {
+// 			break
+// 		}
+
+// 		err = ws.WriteMessage(mt, message)
+// 		if err != nil {
+// 			break
+// 		}
+// 	}
+// }

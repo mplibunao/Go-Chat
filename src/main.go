@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -68,6 +69,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 		// Send the newly received message to the broadcast channel
+		fmt.Println("message %v", msg)
 		broadcast <- msg
 	}
 }
