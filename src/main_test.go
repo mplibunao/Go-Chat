@@ -29,7 +29,7 @@ func TestExample(t *testing.T) {
 	defer ws.Close()
 
 	// Create and Send Message
-	strMsg := `{ "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
+	strMsg := `{ "to": 1, "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
 	textBytes := []byte(strMsg)
 	sentMessage := Message{}
 	parseErr := json.Unmarshal(textBytes, &sentMessage)
