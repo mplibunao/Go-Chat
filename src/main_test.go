@@ -28,11 +28,33 @@ func TestExample(t *testing.T) {
 	}
 	defer ws.Close()
 
+	// Create and Send User Info
+	strUser := `{ "type": "user", "email": "mark@gmail.com", "username": "mplibunao" }`
+	userBytes := []byte(strUser)
+	sentUser := Message{}
+	userParseErr := json.Unmarshal(userBytes, &sentUser)
+	if userParseErr != nil {
+		t.Fatalf("error parsing user info JSON: %v", userParseErr)
+	}
+
+	userWriteErr := ws.WriteJSON(sentUser)
+	if userWriteErr != nil {
+		t.Fatalf("error sending user info JSON: %v", userWriteErr)
+	}
+
+	// Receive User Info
+	receivedUserMsg := Message{}
+	readUserErr := ws.ReadJSON(&receivedUserMsg)
+	if readUserErr != nil {
+		t.Fatal("error reading user info JSON: %v", readUserErr)
+	}
+	t.Log("received user info JSON:", receivedUserMsg)
+
 	// Create and Send Message
-	strMsg := `{ "to": 1, "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
-	textBytes := []byte(strMsg)
+	strMsg := `{ "type": "message", "to": 1, "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
+	msgBytes := []byte(strMsg)
 	sentMessage := Message{}
-	parseErr := json.Unmarshal(textBytes, &sentMessage)
+	parseErr := json.Unmarshal(msgBytes, &sentMessage)
 	if parseErr != nil {
 		t.Fatalf("error parsing JSON: %v", parseErr)
 	}

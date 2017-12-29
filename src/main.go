@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -13,6 +12,7 @@ var clients = make(map[int]*websocket.Conn)
 
 // var clients = make(map[*websocket.Conn]bool) // connected clients
 var broadcast = make(chan Message) // broadcast channel
+//var register = make(chan *Client)
 
 // Configure the upgrader
 var upgrader = websocket.Upgrader{
@@ -25,6 +25,7 @@ var upgrader = websocket.Upgrader{
 
 // Define our message object
 type Message struct {
+	Type     string `json:"type"`
 	To       int    `json:"to"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
@@ -51,11 +52,10 @@ func main() {
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Upgrade initial GET request to a websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
-	id++
-	fmt.Println("id:", id)
 	if err != nil {
 		log.Fatal(err)
 	}
+	id++
 
 	// Make sure we close the connection when the function returns
 	defer ws.Close()
@@ -63,7 +63,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Register our new client
 	//clients[ws] = true
 	clients[id] = ws
-	log.Printf("string(id): %v", id)
 
 	for {
 		var msg Message
@@ -74,6 +73,9 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			delete(clients, id)
 			break
 		}
+
+		msg.To = id
+		log.Printf("test msg %v", msg)
 		// Send the newly received message to the broadcast channel
 		broadcast <- msg
 	}
@@ -83,9 +85,10 @@ func handleMessages() {
 	for {
 		// Grab the next message from the broadcast channel
 		msg := <-broadcast
+
 		// Send it out to every client that is currently connected
 		for clientID, client := range clients {
-			log.Printf("msg %v", msg.To)
+			log.Printf("msg %v", msg)
 			log.Printf("clientID %v", clientID)
 			if clientID == msg.To {
 				err := client.WriteJSON(msg)
