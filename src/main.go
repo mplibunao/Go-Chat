@@ -24,12 +24,14 @@ var upgrader = websocket.Upgrader{
 // Define our message object
 type Message struct {
 	ID       int    `json:"id"`
-	Type     string `json:"type"`
-	To       int    `json:"to"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
-	Message  string `json:"message"`
-	ToAll    bool   `json:"to_all"`
+
+	Type string `json:"type"`
+	To   int    `json:"to"`
+
+	Message string `json:"message"`
+	ToAll   bool   `json:"to_all"`
 }
 
 // type Messages []Message
