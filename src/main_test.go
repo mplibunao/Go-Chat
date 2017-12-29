@@ -29,7 +29,7 @@ func TestExample(t *testing.T) {
 	defer ws.Close()
 
 	// Create and Send User Info
-	strUser := `{ "type": "user", "email": "mark@gmail.com", "username": "mplibunao" }`
+	strUser := `{ "type": "ADD_USER", "email": "mark@gmail.com", "username": "mplibunao" }`
 	userBytes := []byte(strUser)
 	sentUser := Message{}
 	userParseErr := json.Unmarshal(userBytes, &sentUser)
@@ -51,7 +51,7 @@ func TestExample(t *testing.T) {
 	t.Log("received user info JSON:", receivedUserMsg)
 
 	// Create and Send Message
-	strMsg := `{ "type": "message", "to": 1, "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
+	strMsg := `{ "type": "ADD_MESSAGE", "to": 1, "email": "mark@gmail.com", "username": "mplibunao", "message": "Hello World" }`
 	msgBytes := []byte(strMsg)
 	sentMessage := Message{}
 	parseErr := json.Unmarshal(msgBytes, &sentMessage)

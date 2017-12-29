@@ -23,13 +23,16 @@ var upgrader = websocket.Upgrader{
 
 // Define our message object
 type Message struct {
+	// Identifies the user
 	ID       int    `json:"id"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
 
+	// Identifies the action for the payload
 	Type string `json:"type"`
-	To   int    `json:"to"`
 
+	// Identifies message and its receipients
+	To      int    `json:"to"`
 	Message string `json:"message"`
 	ToAll   bool   `json:"to_all"`
 }
@@ -76,7 +79,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// If new connection/user attach ID then echo back to all clients so they could see this user as online
-		if msg.Type == "user" {
+		if msg.Type == "ADD_USER" {
 			msg.ID = id
 		}
 		log.Printf("test msg %v", msg)
@@ -92,21 +95,21 @@ func handleMessages() {
 
 		for clientID, client := range clients {
 			// Send it out to clients based on To Property
-			if clientID == msg.To && msg.Type == "message" {
+			if clientID == msg.To && msg.Type == "ADD_MESSAGE" {
 				err := client.WriteJSON(msg)
 				if err != nil {
 					log.Printf("error: %v", err)
 					client.Close()
 					delete(clients, clientID)
 				}
-			} else if msg.ToAll == true && msg.Type == "message" {
+			} else if msg.ToAll == true && msg.Type == "ADD_MESSAGE" {
 				err := client.WriteJSON(msg)
 				if err != nil {
 					log.Printf("error: %v", err)
 					client.Close()
 					delete(clients, clientID)
 				}
-			} else if msg.Type == "user" {
+			} else if msg.Type == "ADD_USER" {
 				err := client.WriteJSON(msg)
 				if err != nil {
 					log.Printf("error: %v", err)
