@@ -46,7 +46,7 @@ func TestExample(t *testing.T) {
 	receivedUserMsg := Message{}
 	readUserErr := ws.ReadJSON(&receivedUserMsg)
 	if readUserErr != nil {
-		t.Fatal("error reading user info JSON: %v", readUserErr)
+		t.Fatal("error reading user info JSON:", readUserErr)
 	}
 	t.Log("received user info JSON:", receivedUserMsg)
 

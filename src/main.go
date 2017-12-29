@@ -10,9 +10,7 @@ import (
 var id int
 var clients = make(map[int]*websocket.Conn)
 
-// var clients = make(map[*websocket.Conn]bool) // connected clients
 var broadcast = make(chan Message) // broadcast channel
-//var register = make(chan *Client)
 
 // Configure the upgrader
 var upgrader = websocket.Upgrader{
@@ -25,11 +23,13 @@ var upgrader = websocket.Upgrader{
 
 // Define our message object
 type Message struct {
+	ID       int    `json:"id"`
 	Type     string `json:"type"`
 	To       int    `json:"to"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
 	Message  string `json:"message"`
+	ToAll    bool   `json:"to_all"`
 }
 
 // type Messages []Message
@@ -61,7 +61,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	defer ws.Close()
 
 	// Register our new client
-	//clients[ws] = true
 	clients[id] = ws
 
 	for {
@@ -74,7 +73,10 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		msg.To = id
+		// If new connection/user attach ID then echo back to all clients so they could see this user as online
+		if msg.Type == "user" {
+			msg.ID = id
+		}
 		log.Printf("test msg %v", msg)
 		// Send the newly received message to the broadcast channel
 		broadcast <- msg
@@ -86,11 +88,23 @@ func handleMessages() {
 		// Grab the next message from the broadcast channel
 		msg := <-broadcast
 
-		// Send it out to every client that is currently connected
 		for clientID, client := range clients {
-			log.Printf("msg %v", msg)
-			log.Printf("clientID %v", clientID)
-			if clientID == msg.To {
+			// Send it out to clients based on To Property
+			if clientID == msg.To && msg.Type == "message" {
+				err := client.WriteJSON(msg)
+				if err != nil {
+					log.Printf("error: %v", err)
+					client.Close()
+					delete(clients, clientID)
+				}
+			} else if msg.ToAll == true && msg.Type == "message" {
+				err := client.WriteJSON(msg)
+				if err != nil {
+					log.Printf("error: %v", err)
+					client.Close()
+					delete(clients, clientID)
+				}
+			} else if msg.Type == "user" {
 				err := client.WriteJSON(msg)
 				if err != nil {
 					log.Printf("error: %v", err)
