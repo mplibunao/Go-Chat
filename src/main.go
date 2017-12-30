@@ -8,20 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var id int
-var clients = make(map[int]*websocket.Conn)
-
-var broadcast = make(chan Message) // broadcast channel
-
-// Configure the upgrader
-var upgrader = websocket.Upgrader{
-	// ReadBufferSize:  1024,
-	// WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
 // Define our message object
 type Message struct {
 	// Identifies the user
@@ -41,6 +27,18 @@ type Message struct {
 type Messages []Message
 
 var messages = Messages{}
+var id int
+var clients = make(map[int]*websocket.Conn)
+var broadcast = make(chan Message) // broadcast channel
+
+// Configure the upgrader
+var upgrader = websocket.Upgrader{
+	// ReadBufferSize:  1024,
+	// WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 func main() {
 
@@ -80,6 +78,12 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		err := ws.ReadJSON(&msg)
 		if err != nil {
 			log.Printf("read error: %v", err)
+			// Find and delete user in messages slice
+			for i, message := range messages {
+				if message.ID == id {
+					messages[i] = Message{}
+				}
+			}
 			delete(clients, id)
 			break
 		}
