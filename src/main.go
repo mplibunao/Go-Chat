@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -37,9 +38,12 @@ type Message struct {
 	ToAll   bool   `json:"to_all"`
 }
 
-// type Messages []Message
+type Messages []Message
+
+var messages = Messages{}
 
 func main() {
+
 	// Configure websocket route
 	http.HandleFunc("/ws", handleConnections)
 
@@ -68,12 +72,14 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Register our new client
 	clients[id] = ws
 
+	echoPreviousMessages()
+
 	for {
 		var msg Message
 		// Read in a new message as JSON and map it to a Message object
 		err := ws.ReadJSON(&msg)
 		if err != nil {
-			log.Printf("error: %v", err)
+			log.Printf("read error: %v", err)
 			delete(clients, id)
 			break
 		}
@@ -88,31 +94,63 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func echoPreviousMessages() {
+	fmt.Println("echoing Previous Messages")
+	for _, message := range messages {
+		for clientID, client := range clients {
+
+			if clientID == message.To && message.Type == "ADD_MESSAGE" {
+				err := client.WriteJSON(message)
+				if err != nil {
+					log.Printf("close error: %v", err)
+					client.Close()
+					delete(clients, clientID)
+				}
+			} else if message.ToAll == true && message.Type == "ADD_MESSAGE" {
+				err := client.WriteJSON(message)
+				if err != nil {
+					log.Printf("close error: %v", err)
+					client.Close()
+					delete(clients, clientID)
+				}
+			} else if message.Type == "ADD_USER" {
+				err := client.WriteJSON(message)
+				if err != nil {
+					log.Printf("close error: %v", err)
+					client.Close()
+					delete(clients, clientID)
+				}
+			}
+		}
+	}
+}
+
 func handleMessages() {
 	for {
 		// Grab the next message from the broadcast channel
 		msg := <-broadcast
+		messages = append(messages, msg)
 
 		for clientID, client := range clients {
 			// Send it out to clients based on To Property
 			if clientID == msg.To && msg.Type == "ADD_MESSAGE" {
 				err := client.WriteJSON(msg)
 				if err != nil {
-					log.Printf("error: %v", err)
+					log.Printf("close error: %v", err)
 					client.Close()
 					delete(clients, clientID)
 				}
 			} else if msg.ToAll == true && msg.Type == "ADD_MESSAGE" {
 				err := client.WriteJSON(msg)
 				if err != nil {
-					log.Printf("error: %v", err)
+					log.Printf("close error: %v", err)
 					client.Close()
 					delete(clients, clientID)
 				}
 			} else if msg.Type == "ADD_USER" {
 				err := client.WriteJSON(msg)
 				if err != nil {
-					log.Printf("error: %v", err)
+					log.Printf("close error: %v", err)
 					client.Close()
 					delete(clients, clientID)
 				}
