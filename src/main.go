@@ -21,7 +21,6 @@ type Message struct {
 	// Identifies message and its receipients
 	To      int    `json:"to"`
 	Message string `json:"message"`
-	ToAll   bool   `json:"to_all"`
 }
 
 type Messages []Message
@@ -102,7 +101,6 @@ func echoPreviousMessages() {
 	fmt.Println("echoing Previous Messages")
 	for _, message := range messages {
 		for clientID, client := range clients {
-
 			if clientID == message.To && message.Type == "ADD_MESSAGE" {
 				err := client.WriteJSON(message)
 				if err != nil {
@@ -110,7 +108,7 @@ func echoPreviousMessages() {
 					client.Close()
 					delete(clients, clientID)
 				}
-			} else if message.ToAll == true && message.Type == "ADD_MESSAGE" {
+			} else if message.Type == "MESSAGE_TO_ALL" {
 				err := client.WriteJSON(message)
 				if err != nil {
 					log.Printf("close error: %v", err)
@@ -144,7 +142,7 @@ func handleMessages() {
 					client.Close()
 					delete(clients, clientID)
 				}
-			} else if msg.ToAll == true && msg.Type == "ADD_MESSAGE" {
+			} else if msg.Type == "MESSAGE_TO_ALL" {
 				err := client.WriteJSON(msg)
 				if err != nil {
 					log.Printf("close error: %v", err)
